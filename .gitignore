@@ -2,3 +2,5 @@ __pycache__/
 .env
 credentials.json
 .venv/
+glove.6B.50d.txt
+temp_downloaded_file.pdf

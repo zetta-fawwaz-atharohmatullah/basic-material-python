@@ -60,7 +60,9 @@ def read_pdf_content(pdf_document: str):
         
     Returns:
         _type_: _description_
-        
+    
+    detect html type, (get_text())  
+    pdf miner font size     
     """
     try:
         if not pdf_document:
@@ -110,4 +112,4 @@ def main(key: str, path_local: str, path_url: str):
 if __name__ == "__main__": 
     local_pdf_path = r'C:\Users\fawwaz\Downloads\Resume_Fawwaz Atha Rohmatullah_Nov.pdf'
     url_pdf_path = 'https://media.neliti.com/media/publications/249244-none-837c3dfb.pdf'  
-    main('url', local_pdf_path, url_pdf_path)
+    main('local', local_pdf_path, url_pdf_path)
