@@ -68,7 +68,8 @@ def main():
     pdf_path = download_pdf_from_bucket(storage_client, bucket_name, blob_name)
     content = load_pdf(pdf_path)
     text = read_pdf_content(content)
-    print(text)
+    #print(text)
+    return text
     
 if __name__ == "__main__":
     main()
