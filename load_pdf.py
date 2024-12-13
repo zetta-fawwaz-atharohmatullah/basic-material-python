@@ -119,4 +119,4 @@ def load_document(path: str):
 if __name__ == "__main__": 
     local_pdf_path = r'C:\Users\fawwaz\Downloads\Resume_Fawwaz Atha Rohmatullah_Nov.pdf'
     url_pdf_path = 'https://api.features-v2.zetta-demo.space/fileuploads/AI-Intern---Glints---Josephine-Diva-0c38af74-db36-4436-b290-6f28e56de774.pdf?'  
-    process_document(url_pdf_path)
+    #process_document(url_pdf_path)
