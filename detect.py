@@ -3,6 +3,7 @@ import nltk
 from langdetect import detect
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
+from pycountry import languages
 
 # configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -111,6 +112,19 @@ class LanguageTranslator:
             })
         logging.exception("Finished batch translate")
         return results
+    
+    def _full_name(self, detected: str) -> str:
+        lang_name = languages.get(alpha_2= detected).name
+        return lang_name
+
+    def process_lang(self, text: str, target: str) -> str:
+        translator = LanguageTranslator(num_threads=4)
+        translated = translator.translate_text(text, target)
+        detected = translator.detect_language(text)
+            
+        full_target = translator._full_name(target)
+        full_detected = translator._full_name(detected)
+        return full_target, full_detected, translated
 
 
 if __name__ == "__main__":
