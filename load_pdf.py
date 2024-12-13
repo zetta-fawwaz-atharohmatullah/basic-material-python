@@ -2,6 +2,7 @@ import os
 import re
 import requests
 import fitz 
+#from day2 import split_text_into_sections,  preprocess_sections, spacy_tokenizer
 
 # checkking url
 def is_url(path: str) -> bool:
@@ -85,31 +86,37 @@ def read_pdf_content(pdf_document: str):
         print(f"{ve} not a valid pdf")
     return full_text
 
-def main(key: str, path_local: str, path_url: str):
+
+
+def load_document(path: str):
     """_summary_
     function main to read the text from pdf document
     Args:
-        key (_type_): _description_
-        path_local (_type_): _description_
-        path_url (_type_): _description_
+        path: _description_
     """
-    if key=='local':
-        pdf_from_local = load_pdf(path_local)
-        print(pdf_from_local)
-        if pdf_from_local:
-            full_text = read_pdf_content(pdf_from_local)
-            print(full_text)
-            pdf_from_local.close()
-    else:
-        pdf_from_url = load_pdf(path_url)
-        print(pdf_from_url)
-        if pdf_from_url:
-            full_text = read_pdf_content(pdf_from_url)
-            print(full_text)
-            pdf_from_url.close()
-        
+    
+    pdf_from_local = load_pdf(path)
+    print(pdf_from_local)
+    if pdf_from_local:
+        full_text = read_pdf_content(pdf_from_local)
+        # print(full_text)
+        # headers = [ 
+        #     'Summary', 
+        #     'Experience', 
+        #     'Education', 
+        #     'Licenses & Certifications', 
+        #     'Licenses & Certiﬁcations',
+        #     'Skills', 
+        # ]
+        # text_split = split_text_into_sections(full_text, headers)
+        # text_preprocessed = preprocess_sections(text_split)
+        # print(text_preprocessed)
+        pdf_from_local.close()
+    return full_text
+
+
 
 if __name__ == "__main__": 
     local_pdf_path = r'C:\Users\fawwaz\Downloads\Resume_Fawwaz Atha Rohmatullah_Nov.pdf'
-    url_pdf_path = 'https://media.neliti.com/media/publications/249244-none-837c3dfb.pdf'  
-    main('local', local_pdf_path, url_pdf_path)
+    url_pdf_path = 'https://api.features-v2.zetta-demo.space/fileuploads/AI-Intern---Glints---Josephine-Diva-0c38af74-db36-4436-b290-6f28e56de774.pdf?'  
+    process_document(url_pdf_path)

@@ -1,0 +1,226 @@
+openapi: 3.0.0
+info:
+  version: '1.0'
+  title: FLASK API DOCUMENTATION DAY 3
+  description: 'Descritpion'
+servers:
+  - url: https://google.com
+
+paths:
+  # load document request
+  /load_document:
+    post:
+      summary: "Loading document to webhook"
+      description: Process a document and send it to the specified webhook URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+          #load document schema
+            schema:
+              type: object
+              properties: 
+                webhook_url:
+                  type: string
+                  format: url
+                  example: https://api.features-v2.zetta-demo.space/fileuploads/AI-Intern---Glints---Josephine-Diva-0c38af74-db36-4436-b290-6f28e56de774.pdf
+                  description: The file pdf url.
+              required:
+                - pdf url
+
+      responses:
+        '200':
+          description: Successfully processed and sent the document.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Document processed and sent to webhook
+       
+
+
+  # compute similarity request
+  /compute similarity:
+    post:
+      summary: "Compute Similarity"
+      description: Compute the cosine similarity between a query and provided text data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+          #load document schema
+            schema:
+              type: object
+              properties: 
+                query:
+                  type: string
+                  example: data science
+                  description: The query text to compute similarity against.
+                text:
+                  type: object
+                  description: The text data, where keys are section names and values are token lists.
+                  additionalProperties:
+                    type: array
+                    items:
+                      type: string
+                  example: 
+                    Introduction: 
+                      - "fawwaz"
+                      - "atha"
+                      - "rohmatullah"
+                      - "linkedin"
+                      - "62"
+                      - "656"
+                      - "211"
+                      - "001"
+                      - "github"
+                      - "kaggle"
+                    Skills: 
+                      - "advanced"
+                      - "python"
+                      - "s"
+                      - "l"
+                      - "tableau"
+                      - "wordpress"
+                      - "google"
+                      - "analytic"
+                      - "tensor"
+                      - "ow"
+                      - "pytorch"
+                      - "streamlit"
+                      - "sql"
+                      - "exposure"
+                      - "java"
+                      - "c"
+                      - "html"
+                      - "css"
+                      - "excel"
+                      - "figma"
+                      - "bigquery"
+                      - "google"
+                      - "cloud"
+                      - "docker"
+                      - "professional"
+                      - "pro"
+                      - "ciency"
+                      - "english"
+                      - "native"
+                      - "speaker"
+                      - "indonesian"
+                      - "relevant"
+                      - "coursework"
+                      - "datum"
+                      - "science"
+                      - "data"
+                      - "analytic"
+                      - "machine"
+                      - "learn"
+                      - "deep"
+                      - "learn"
+                      - "finalist"
+                      - "data"
+                      - "analytic"
+                      - "competition"
+                      - "findit"
+                      - "ugm"
+                      - "2024"
+                      - "10"
+                      - "finalist"
+                      - "datum"
+                      - "competition"
+                      - "isfest"
+                      - "umn"
+                      - "2024"
+                      - "10"
+                      - "finalist"
+                      - "datum"
+                      - "science"
+                      - "competition"
+                      - "mcf"
+                      - "itb"
+                      - "2024"
+                      - "top10"
+                    
+              required:
+                - query
+                - text
+
+      responses:
+        '200':
+          description: Successfully computed the similarity.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                    example: data science
+                  similarity_scores:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        section_name:
+                          type: string
+                          example: Experience
+                        score:
+                          type: number
+                          example: 0.8681
+                          format: float
+              example:
+                query: data science
+                similarity_scores:
+                  - section: Experience
+                    similarity_score: 0.8681
+                  - section: Certifications
+                    similarity_score: 0.8433
+                  - section: Skills
+                    similarity_score: 0.8419    
+               
+
+  
+
+  # translate request
+  /translate:
+    post:
+      summary: "Detect and Translate Language"
+      description: Translate text from the source language to the target language.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  example: Bonjour, comment ça va ? Ce texte est écrit en français pour illustrer l'usage de la langue dans une conversation quotidienne. La salutation 'Bonjour' est utilisée pour dire 'Hello' ou 'Good morning' en anglais, tandis que 'comment ça va ?' signifie 'how are you?' ou 'how's it going?'. Ce type d'expression est couramment utilisé pour engager une discussion informelle et amicale. Le fait de préciser que 'Ce texte est écrit en français' met en évidence l'intention de signaler la langue utilisée, ce qui peut être utile dans un contexte éducatif ou de traduction.
+                  description: The text to be translated.
+                target_lang:
+                  type: string
+                  example: en
+                  description: The ISO 639-1 language code for the target language (e.g., 'es' for Spanish).
+              required:
+                - text
+                - target_lang
+      responses:
+        '200':
+          description: Successfully translated the text.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  original_text:
+                    type: string
+                    example: Bonjour, comment ça va ? Ce texte est écrit en français pour illustrer l'usage de la langue dans une conversation quotidienne. La salutation 'Bonjour' est utilisée pour dire 'Hello' ou 'Good morning' en anglais, tandis que 'comment ça va ?' signifie 'how are you?' ou 'how's it going?'. Ce type d'expression est couramment utilisé pour engager une discussion informelle et amicale. Le fait de préciser que 'Ce texte est écrit en français' met en évidence l'intention de signaler la langue utilisée, ce qui peut être utile dans un contexte éducatif ou de traduction.
+                  process language:
+                    type: string
+                    example: French -> English
+                  translated_text:
+                    type: string
+                    example: Hello, how is it? It means ‘how are you?’ Or ‘how’s it going?’ This text is written in French to illustrate the use of language in a daily conversation. This type of expression is commonly used to engage an informal and friendly discussion. The greeting ‘Hello’ is used to say ‘Hello’ or ‘Good Morning’ in English, while ‘How is it going?’ The fact that 'This text is written in French' highlights the intention of signaling the language used, which may be useful in an educational or translation context.
