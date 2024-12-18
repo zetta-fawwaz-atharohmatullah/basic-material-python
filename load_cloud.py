@@ -72,4 +72,5 @@ def main():
     return text
     
 if __name__ == "__main__":
-    main()
+    file = main()
+    print(file)

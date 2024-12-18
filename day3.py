@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory
 import requests
 from day2 import procces_similarity, process_pdf
-                  
+#from material_raglangchain.langchain_day5 import qa_system
+from material_raglangchain.test import qa_system
 import logging
 from detect import LanguageTranslator
 from concurrent.futures import ThreadPoolExecutor
@@ -133,6 +134,34 @@ def translate():
     except Exception as e:
         logging.exception(f'An error occurred while translating the text {e}.')
         return jsonify({"error": "An internal server error occurred"}), 500
+
+
+@app.route('/qa_system', methods=['POST'])
+def qa_systems():
+    try:
+        data = request.get_json()   
+        if not data or 'query' not in data:
+            return jsonify({"error": "Missing 'query' in request"}), 400
+        
+        query = data.get("query")
+        logging.info("Start question answering")
+        results = qa_system(query)
+        
+        # Check the result is structured correctly
+        if not all(key in results for key in ("question", "answer", "tokens_in", "tokens_out")):
+            return jsonify({"error": "Unexpected response from qa_system"}), 500
+
+        logging.info("Finished computing generate.")
+        return jsonify({
+            "question": results.get("question"),
+            "answer": results.get("answer"),
+            "tokens_in": results.get("tokens_in"),
+            "tokens_out": results.get("tokens_out"),
+        }), 200
+        
+    except Exception as e:
+        logging.exception(f'An error occurred in /qa_system endpoint: {e}')
+        return jsonify({"error": "Internal server error"}), 500
 
 
 if __name__ == "__main__":

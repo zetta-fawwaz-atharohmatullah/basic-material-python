@@ -1,0 +1,72 @@
+RAG (retrieval augmented generation)
+
+Is a technique to provide LLM with additional contenxt to 
+reduce hallcinations and increase accuracy, similarly to traditional fine-tuning.
+chunking  = Breaking down your large data files into more manageable segments
+
+example problem, to solve scientific questions with multiple answer with llm, then we can leverage 
+RAG architecture to help llm get retrieval context document for each questions for additional 
+information for the llm
+
+what we need:
+- sentence Embedding
+- combine questions and all answer options 
+
+schema for this example:
+
+combine questions and all answer options(user query) -->  Embed the User Query with Sentence Embedding   
+                                                                |        
+                                                                V
+Document --> Embed the document Query with Sentence Embedding (chunking)
+                                    |    
+                                    V
+                    +--------- Document Store  ----------------+
+                    |         (Vector Database) / Faiss FB     |
+                    +------------------------------------------+
+                                    |    
+                                    V
+                            Retrieve top K
+                                    |    
+                                    V
+                    +----------Context---------------------+
+                    |         Some context top k           | 
+                    +--------------------------------------+
+                                   
+
+Example Output:
+prompt	
+Which of the following statements accurately d...	
+A
+MOND is a theory that reduces the observed mis...	
+B
+MOND is a theory that increases the discrepanc...
+C
+MOND is a theory that explains the missing bar...
+D
+MOND is a theory that reduces the discrepancy
+
+Context 
+Outstanding problems for MOND The most serious...
+
+
+
+General Flow  
+User Query  -->  Query Preprocessing  -->  Retriever  -->  Relevant Documents
+                                                      |    
+                                                      V
+                                               Embedding Model  
+                                                      |
+                                                      V
+                                      +--------- Document Store  ---------+
+                                      |         (Vector Database)         |
+                                      +-----------------------------------+
+                                                     |
+                                                     V
+                               +---------------- Generator (LLM) ----------------+
+                               |   Combines User Query with Retrieved Content   |
+                               +------------------------------------------------+
+                                                     |
+                                                     V
+                                               Final Response
+
+

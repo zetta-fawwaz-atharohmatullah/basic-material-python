@@ -6,5 +6,8 @@ glove.6B.50d.txt
 temp_downloaded_file.pdf
 .idea/
 swagger/
-
-
+attention.pdf 
+Famous.pdf 
+temp_downloaded_file.pdf 
+# Ignore process.log
+process.log
