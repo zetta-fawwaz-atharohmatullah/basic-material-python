@@ -86,6 +86,34 @@ def read_pdf_content(pdf_document: str):
         print(f"{ve} not a valid pdf")
     return full_text
 
+def extract_text_from_pdf(pdf_document: fitz.Document, start_page: int = 0, end_page: int = None) -> str:
+    """Extract and clean the text content from a PDF document within a page range.
+    
+    Args:
+        pdf_document (fitz.Document): A PyMuPDF Document object.
+        start_page (int): The starting page number (0-indexed).
+        end_page (int): The ending page number (0-indexed, exclusive). If None, it extracts until the last page.
+    
+    Returns:
+        str: Extracted and cleaned text from the specified range of the PDF document.
+    """
+    if not pdf_document:
+        raise ValueError("Provided object is not a valid PDF document.")
+    
+    if end_page is None or end_page > len(pdf_document):
+        end_page = len(pdf_document)
+    
+    full_text = ""
+    try:
+        for page_number in range(start_page, end_page):
+            page = pdf_document.load_page(page_number)
+            page_text = page.get_text()
+            full_text += page_text + "\n"
+        print(f"Successfully extracted text from pages {start_page} to {end_page - 1}.")
+    except Exception as e:
+        print(f"Error while extracting text from PDF. Error: {e}")
+    
+    return full_text
 
 
 def load_document(path: str):
@@ -119,4 +147,23 @@ def load_document(path: str):
 if __name__ == "__main__": 
     local_pdf_path = r'C:\Users\fawwaz\Downloads\Resume_Fawwaz Atha Rohmatullah_Nov.pdf'
     url_pdf_path = 'https://api.features-v2.zetta-demo.space/fileuploads/AI-Intern---Glints---Josephine-Diva-0c38af74-db36-4436-b290-6f28e56de774.pdf?'  
-    load_document(url_pdf_path)
+    texts = load_document(url_pdf_path)
+    print(texts)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
