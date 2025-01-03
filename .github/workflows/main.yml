@@ -1,0 +1,44 @@
+name: Auto Merge if No Conflicts
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+      - 'dev'
+      - '*'           # This will match any branch
+      - '!main'       # This excludes main branch
+
+jobs:
+  check-and-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # Fetch all history for all branches
+          
+      - name: Check for conflicts and merge
+        run: |
+          # Get the current branch name
+          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+          echo "Current branch: $BRANCH_NAME"
+          
+          # Fetch latest main
+          git fetch origin main:main
+          
+          # Try to merge main into current branch to check for conflicts
+          if git merge-tree $(git merge-base main HEAD) main HEAD | grep -i "changed in both"; then
+            echo "Conflicts detected, manual merge required"
+            exit 1
+          else
+            # No conflicts, safe to merge
+            git checkout main
+            git merge --no-ff $BRANCH_NAME -m "Auto-merge branch $BRANCH_NAME"
+            git push origin main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
