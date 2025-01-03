@@ -18,6 +18,7 @@ import tiktoken
 import os 
 import logging
 from material_raglangchain.langchain_day5 import inverse_construct_history
+from day6_format_pdf import process_document
 
 load_dotenv(override=True)
 
@@ -25,25 +26,33 @@ ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
 ASTRA_DB_API_ENDPOINT = os.getenv("ASTRA_DB_API_ENDPOINT")
 ASTRA_DB_KEYSPACE = os.getenv("ASTRA_DB_KEYSPACE")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+ASTRA_DB_KEYSPACE = os.getenv("ASTRA_DB_KEYSPACE") 
+ASTRA_DB_KEYCOLLECTION = os.getenv("ASTRA_DB_KEYCOLLECTION")
+
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 model_llm = "gpt-4o-mini"
-model = ChatOpenAI(model=model_llm, temperature=0.9, max_tokens=512)
+model = ChatOpenAI(model=model_llm, temperature=0.9, max_tokens=356)
     
 vector_store = AstraDBVectorStore(
-    collection_name="test_push_two",
+    collection_name=ASTRA_DB_KEYCOLLECTION,
     embedding=embeddings,
     api_endpoint=ASTRA_DB_API_ENDPOINT,
     token=ASTRA_DB_APPLICATION_TOKEN,
-    namespace="testing_push",
+    namespace=ASTRA_DB_KEYSPACE,
 )
 
+# logging.basicConfig(
+#     level=logging.DEBUG,
+#     format='%(asctime)s - %(levelname)s - %(message)s',
+#     handlers=[
+#         logging.FileHandler("process.log"),
+#         logging.StreamHandler()
+#     ]
+# )
+
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("process.log"),
-        logging.StreamHandler()
-    ]
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
 #client = DataAPIClient(ASTRA_DB_APPLICATION_TOKEN)
@@ -93,7 +102,12 @@ def process_and_push(url: str, document_name: str, document_id: str):
     Process and push chunks to AstraDB."
     """
     try:
-        extracted_data = load_document_update(url, document_name, document_id)
+        #extracted_data = load_document_update(url, document_name, document_id)
+        document_metadata = {
+            "document_name": document_name,
+            "document_id": document_id
+        }
+        extracted_data = process_document(url, document_metadata)
         logging.info(f"Total Sections Extracted: {len(extracted_data)}")
 
         documents = []
@@ -278,34 +292,34 @@ if __name__ == "__main__":
     document_id = '1234-5678-uuid'
 
     # push to astradb
-    #process_and_push(pdf_url, document_name, document_id)
+    # process_and_push(pdf_url, document_name, document_id)
     
     # search similarity
-    # query = str(input("\n query: ").lower())
-    # results = vector_store.similarity_search_with_score(
-    # query, k=3, filter={'document_id': document_id}
-    # )
-    # for res, score in results:
-    #     print(f"* \n\n[SIM={score:3f}] {res.page_content} [{res.metadata}]")
+    query = str(input("\n query: ").lower())
+    results = vector_store.similarity_search_with_score(
+    query, k=3, filter={'document_id': document_id}
+    )
+    for res, score in results:
+        print(f"* \n\n[SIM={score:3f}] {res.page_content} [{res.metadata}]")
     
     # rag
     # query = str(input("\n query: ").lower())
     # result = generate(query)
     # print(f"llm generate: \n {result}")
-    chatbot  = RAGChatbot()
-    while True:
-        try:
-            user_input = input("\nHuman: ")
-            if user_input.lower() in ['exit', 'quit']:
-                logging.info("Exiting the chat session.")
-                break
+    # chatbot  = RAGChatbot()
+    # while True:
+    #     try:
+    #         user_input = input("\nHuman: ")
+    #         if user_input.lower() in ['exit', 'quit']:
+    #             logging.info("Exiting the chat session.")
+    #             break
 
-            answer = chatbot.generate(user_input)
-            print(f"\nAI: {answer}")
+    #         answer = chatbot.generate(user_input)
+    #         print(f"\nAI: {answer}")
         
-        except KeyboardInterrupt:
-            logging.info("Session interrupted by user. Exiting.")
-            break
+    #     except KeyboardInterrupt:
+    #         logging.info("Session interrupted by user. Exiting.")
+    #         break
    
 
 
