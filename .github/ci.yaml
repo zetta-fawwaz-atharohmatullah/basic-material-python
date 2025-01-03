@@ -2,8 +2,12 @@ name: Auto Merge if No Conflicts
 
 on:
   push:
-    branches-ignore:
-      - main   # Don't trigger on pushes to main
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+      - 'dev'
+      - '*'           # This will match any branch
+      - '!main'       # This excludes main branch
 
 jobs:
   check-and-merge:
@@ -15,12 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0   # Fetch all history for all branches #test
+          fetch-depth: 0   # Fetch all history for all branches
           
       - name: Check for conflicts and merge
         run: |
           # Get the current branch name
           BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+          echo "Current branch: $BRANCH_NAME"
           
           # Fetch latest main
           git fetch origin main:main
