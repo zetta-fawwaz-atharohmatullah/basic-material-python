@@ -166,7 +166,7 @@ def type_retrieval(key:str, query: str, k: Optional[int]=3):
         except Exception as e:
             logging.error(f"Error while retrieve data with astra client: {e}")
         
-    elif key == "langchain1":
+    elif key == "as retriever":
         try:
             logging.info("Start retrieval with langchain as retriever...")
             vector_store = vectorstore()
@@ -184,7 +184,7 @@ def type_retrieval(key:str, query: str, k: Optional[int]=3):
         except Exception as e:
             logging.error(f"Error while retrieve data with langchain as retriever: {e}")
     
-    elif key == "langchain2":
+    elif key == "multiquery":
         try:
             logging.info("Start retrieval with langchain multiquery retriever...")
             vector_store = vectorstore()
@@ -197,7 +197,7 @@ def type_retrieval(key:str, query: str, k: Optional[int]=3):
         except:
             logging.error(f"Error while retrieve data with multiquery: {e}")
     
-    elif key == "langchain3":
+    elif key == "contextual":
         try:
             logging.info("Start retrieval with langchain ContextualCompressionRetriever...")
             vector_store = vectorstore()
@@ -212,7 +212,7 @@ def type_retrieval(key:str, query: str, k: Optional[int]=3):
         except:
             logging.error(f"Error while retrieve data with ContextualCompressionRetriever: {e}")
     
-    elif key == "langchain4":
+    elif key == "rerank":
         try:
             logging.info("Start retrieval with langchain LLMListwiseRerank...")
             vector_store = vectorstore()
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     # lang_as = type_retrieval("langchain1", "how attention works?", 3)
     # print(f"\n{lang_as}")
     
-    lang_as = type_retrieval("langchain2", "how attention works in transformer?")
+    lang_as = type_retrieval("multiquery", "how attention works in transformer?")
     print(f"\n{lang_as}")
     
     
