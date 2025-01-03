@@ -11,6 +11,17 @@ from langchain.chains.conversation.memory import ConversationBufferMemory, Conve
 import os
 from dotenv import load_dotenv
 import tiktoken
+
+def get_model(model_name: str) -> ChatOpenAI:
+        key = os.getenv("OPENAI_API_KEY")
+        model = ChatOpenAI(
+            api_key=key,
+            model_name=model_name,
+            temperature=0.9,
+            max_tokens=256
+        )
+        return model
+    
 load_dotenv()
 
 openai_key = os.getenv("OPENAI_API_KEY")
