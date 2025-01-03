@@ -1,49 +1,47 @@
 # ********** IMPORT FRAMEWORKS **************
 from langchain_astradb import AstraDBVectorStore
-from astrapy.info import CollectionVectorServiceOptions
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from typing import List, Dict, Union
-
+from langchain.retrievers.multi_query import MultiQueryRetriever
 # ********** IMPORT LIBRARY **************
-from day6_load_doc import load_document_update  
 from dotenv import load_dotenv
 from astrapy import DataAPIClient
 import tiktoken
 import os 
 import logging
-from material_raglangchain.langchain_day5 import inverse_construct_history
+from day6_format_pdf_new import DocumentPreprocess
+from astrapy import DataAPIClient
+from typing import Optional
+from material_raglangchain.langchain_day4 import get_model
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+from langchain.retrievers.document_compressors import LLMListwiseRerank
 
 load_dotenv(override=True)
 
-ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
-ASTRA_DB_API_ENDPOINT = os.getenv("ASTRA_DB_API_ENDPOINT")
-ASTRA_DB_KEYSPACE = os.getenv("ASTRA_DB_KEYSPACE")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-model_llm = "gpt-4o-mini"
-model = ChatOpenAI(model=model_llm, temperature=0.9, max_tokens=512)
-    
-vector_store = AstraDBVectorStore(
-    collection_name="test_push_two",
-    embedding=embeddings,
-    api_endpoint=ASTRA_DB_API_ENDPOINT,
-    token=ASTRA_DB_APPLICATION_TOKEN,
-    namespace="testing_push",
-)
+class APISetup:
+    ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
+    ASTRA_DB_API_ENDPOINT = os.getenv("ASTRA_DB_API_ENDPOINT")
+    ASTRA_DB_KEYSPACE = os.getenv("ASTRA_DB_KEYSPACE")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    ASTRA_DB_KEYSPACE = os.getenv("ASTRA_DB_KEYSPACE") 
+    ASTRA_DB_KEYCOLLECTION = os.getenv("ASTRA_DB_KEYCOLLECTION")
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
+def vectorstore():
+    vector_store = AstraDBVectorStore(
+        collection_name=APISetup.ASTRA_DB_KEYCOLLECTION,
+        embedding=APISetup.embeddings,
+        api_endpoint=APISetup.ASTRA_DB_API_ENDPOINT,
+        token=APISetup.ASTRA_DB_APPLICATION_TOKEN,
+        namespace=APISetup.ASTRA_DB_KEYSPACE,
+    )
+    return vector_store
 
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("process.log"),
-        logging.StreamHandler()
-    ]
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
 #client = DataAPIClient(ASTRA_DB_APPLICATION_TOKEN)
@@ -79,8 +77,6 @@ def split_text_into_chunks(page_content: str, metadata: dict) -> list[Document]:
             chunk_overlap=50,
             is_separator_regex=False
         )
-        #chunks = splitter.create_documents([page_content])
-        #chunks = splitter.split_documents([Document(page_content=page_content)])
         chunks = splitter.split_documents([Document(page_content=page_content, metadata=metadata)])
         logging.info(f"Split text into {len(chunks)} chunks")
         return chunks
@@ -90,10 +86,13 @@ def split_text_into_chunks(page_content: str, metadata: dict) -> list[Document]:
         
 def process_and_push(url: str, document_name: str, document_id: str):
     """_summary_
-    Process and push chunks to AstraDB."
+    Process and push chunks to AstraDB.
+    Args: doc url, document name, document id
     """
     try:
-        extracted_data = load_document_update(url, document_name, document_id)
+        processor = DocumentPreprocess(url, document_name, document_id)
+        processor.extract_html_from_pdf()
+        extracted_data = processor.process_document()
         logging.info(f"Total Sections Extracted: {len(extracted_data)}")
 
         documents = []
@@ -125,7 +124,6 @@ def process_and_push(url: str, document_name: str, document_id: str):
     except Exception as e:
         logging.error(f"Error in process_and_push: {e}")
 
-
 def push_to_astra(documents: list[Document]):
     """_summary_
     Push the chunks to AstraDB using the Vector Store.
@@ -133,144 +131,107 @@ def push_to_astra(documents: list[Document]):
     """
     try:
         logging.info("Pushing chunks to AstraDB...")
+        vector_store = vectorstore()
         _ = vector_store.add_documents(documents)
         logging.info(f"Successfully inserted {len(documents)} chunks into AstraDB with auto-embedding.")
     except Exception as e:
         logging.error(f"Error while pushing data to AstraDB: {e}")
 
-
-def get_context(query: str) -> str:
-    """_summary_
-    Retrieve the most relevant context from AstraDB using vector similarity search.
-    Returns:
-        _type_: _description_
-    """
-    try:
-        logging.info(f"Starting vector similarity search for query: '{query}'")
-        retrieved_docs = vector_store.similarity_search(query, k=3, filter={"document_id": "1234-5678-uuid"})
-        docs_context = "\n\n".join(doc.page_content for doc in retrieved_docs)
-        
-        if not docs_context:
-            logging.warning("No context retrieved from the vector store.")
-        
-        return docs_context
-    except Exception as e:
-        logging.error(f"Error while retrieving context from vector store: {e}")
-        return ""
-
-def create_template()  -> ChatPromptTemplate:
-    return ChatPromptTemplate.from_template("""
-        You are a machine learning engineer expert. Please integrate natural language reasoning to assist. 
-        Use the following context to answer the question.
-
-        Context:
-        {docs_context}
-
-        Chat History:
-        {history}
-        
-        Question:
-        {query}
-
-        Answer:
-    """)
-
-def generate(query: str) -> str:
-    """Generate an answer to the given query using the RAG (Retrieval-Augmented Generation) chain."""
-    try:
-        docs_context = get_context(query)
-        logging.info(f"Context retrieved: \n{docs_context}")
-
-        if not docs_context:
-            logging.warning("No relevant context found to answer the question.")
-            return "No relevant context found to answer the question."
-
-        prompt_template = create_template()
-        chain = prompt_template | model
-        response = chain.invoke({"query": query, "docs_context": docs_context})
-        response_clean = response.content
-        return response_clean
-    except Exception as e:
-        logging.error(f"Error in generate: {e}")
-        return "An error occurred while generating the response."
-
-
-class RAGChatbot:
-    def __init__(self):
-        """Initialize with an empty chat history."""
-        self.chat_history: List[Dict[str, str]] = []
-
-    def get_context(self, query: str, document_id: str = '1234-5678-uuid') -> str:
-        """
-        Retrieve the most relevant context from AstraDB using vector similarity search.
-        """
+def type_retrieval(key:str, query: str, k: Optional[int]=3):
+    llm = get_model("gpt-4o-mini")
+    if key == "astra":
         try:
-            retrieved_docs = vector_store.similarity_search(query=query, k=3, filter={"document_id": document_id})
-            if not retrieved_docs:
-                logging.warning("No relevant context found.")
-                return ""
+            logging.info("Start retrieval with astra client...")
+            client = DataAPIClient(APISetup.ASTRA_DB_APPLICATION_TOKEN)
+            db = client.get_database_by_api_endpoint(
+            APISetup.ASTRA_DB_API_ENDPOINT
+            )
+            collection = db.get_collection(APISetup.ASTRA_DB_KEYCOLLECTION)
+            results = collection.find(
+                sort={"$vectorize": query},
+                limit=k,
+                projection={"$vectorize": True},
+                include_similarity=True,
+            )
+            print(results)
             
-            context = "\n\n".join(doc.page_content for doc in retrieved_docs)
-            logging.info(f"Context successfully retrieved with {len(retrieved_docs)} documents.")
-            return context
+            formatted_results = []
+            for doc in results:
+                similarity = doc.get("$similarity", 0)
+                text = doc.get("content", "")  
+                formatted_results.append(f"Similarity: {similarity:.3f} - {text}")
+            logging.info("succesfully retrieve with astra client...")
+            return "\n".join(formatted_results)
+            
         except Exception as e:
-            logging.error(f"Error during context retrieval: {e}")
-            return ""
-
-    def create_prompt_template(self) -> ChatPromptTemplate:
-        """
-        Create the prompt template for the LLM.
-        """
-        return ChatPromptTemplate.from_template("""
-            You are a machine learning engineer expert. 
-            Please integrate natural language reasoning to assist. 
-            Use the following context and chat history to answer the question.
-
-            Context:
-            {docs_context}
-
-            Chat History:
-            {history}
-
-            Question:
-            {query}
-
-            Answer:
-        """)
-
-    def generate(self, query: str) -> str:
-        """
-        Generate an answer to the given query using RAG (Retrieval-Augmented Generation) with chat history.
-        """
+            logging.error(f"Error while retrieve data with astra client: {e}")
+        
+    elif key == "as retriever":
         try:
-            context = self.get_context(query)
-            if not context:
-                logging.warning("No relevant context found for query.")
-                return "No relevant context found to answer the question."
-
-            restored_history = inverse_construct_history(self.chat_history)
-            
-            prompt_template = self.create_prompt_template()
-            
-            llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.9, max_tokens=512)
-            chain = prompt_template | llm
-            
-            response = chain.invoke({
-                "query": query, 
-                "docs_context": context, 
-                "history": "\n".join([f"{type(msg).__name__}: {msg.content}" for msg in restored_history])
-            })
-            
-            if response:
-                logging.info(f"Generated response: {response.content}")
-                self.chat_history.append({"human": query, "AI": response.content}) 
-                return response.content
-            else:
-                logging.warning("No response from the LLM.")
-                return "The model could not generate a response."
+            logging.info("Start retrieval with langchain as retriever...")
+            vector_store = vectorstore()
+            retriever = vector_store.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs={
+                "k": k, 
+                "score_threshold": 0.7,
+                "filter": {"document_id": "1234-5678-uuid"}
+            }
+        )
+            docs = retriever.invoke(query)
+            logging.info("succesfully retrieve with langchain as retriever...")
+            return "\n\n".join(doc.page_content for doc in docs)
         except Exception as e:
-            logging.error(f"Error in RAG generation: {e}")
-            return "An error occurred while generating the response."
+            logging.error(f"Error while retrieve data with langchain as retriever: {e}")
+    
+    elif key == "multiquery":
+        try:
+            logging.info("Start retrieval with langchain multiquery retriever...")
+            vector_store = vectorstore()
+            retriever_from_llm = MultiQueryRetriever.from_llm(
+                retriever=vector_store.as_retriever(), llm=llm
+            )
+            result = retriever_from_llm.invoke(query)
+            logging.info("succesfully retrieve with langchain multiquery retriever...")
+            return "\n\n".join(doc.page_content for doc in result)
+        except:
+            logging.error(f"Error while retrieve data with multiquery: {e}")
+    
+    elif key == "contextual":
+        try:
+            logging.info("Start retrieval with langchain ContextualCompressionRetriever...")
+            vector_store = vectorstore()
+            compressor = LLMChainExtractor.from_llm(llm)
+            compression_retriever = ContextualCompressionRetriever(base_compressor=compressor,
+                                                                base_retriever=vector_store.as_retriever())
+            compressed_docs = compression_retriever.invoke(
+                query
+            )
+            logging.info("succesfully retrieve with langchain ContextualCompressionRetriever...")
+            return "\n\n".join(doc.page_content for doc in compressed_docs)
+        except:
+            logging.error(f"Error while retrieve data with ContextualCompressionRetriever: {e}")
+    
+    elif key == "rerank":
+        try:
+            logging.info("Start retrieval with langchain LLMListwiseRerank...")
+            vector_store = vectorstore()
+            compressor = LLMChainExtractor.from_llm(llm)
+            compression_retriever = ContextualCompressionRetriever(base_compressor=compressor,
+                                                                base_retriever=vector_store.as_retriever())
+            _filter = LLMListwiseRerank.from_llm(llm, top_n=2)
+            compression_retriever = ContextualCompressionRetriever(
+                base_compressor=_filter, base_retriever=compression_retriever
+            )
+
+            compressed_docs = compression_retriever.invoke(
+                query
+            )
+            logging.info("succesfully retrieve with langchain LLMListwiseRerank...")
+            return "\n\n".join(doc.page_content for doc in compressed_docs)
+        except:
+            logging.error(f"Error while retrieve data with LLMListwiseRerank: {e}")
+    
 
 if __name__ == "__main__":
     pdf_url = 'https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf'
@@ -281,31 +242,18 @@ if __name__ == "__main__":
     #process_and_push(pdf_url, document_name, document_id)
     
     # search similarity
-    # query = str(input("\n query: ").lower())
-    # results = vector_store.similarity_search_with_score(
-    # query, k=3, filter={'document_id': document_id}
-    # )
-    # for res, score in results:
-    #     print(f"* \n\n[SIM={score:3f}] {res.page_content} [{res.metadata}]")
+    # astra_re = type_retrieval("astra", "how attention works?")
+    # print(f"\n{astra_re}")
     
-    # rag
-    # query = str(input("\n query: ").lower())
-    # result = generate(query)
-    # print(f"llm generate: \n {result}")
-    chatbot  = RAGChatbot()
-    while True:
-        try:
-            user_input = input("\nHuman: ")
-            if user_input.lower() in ['exit', 'quit']:
-                logging.info("Exiting the chat session.")
-                break
-
-            answer = chatbot.generate(user_input)
-            print(f"\nAI: {answer}")
-        
-        except KeyboardInterrupt:
-            logging.info("Session interrupted by user. Exiting.")
-            break
+    # lang_as = type_retrieval("langchain1", "how attention works?", 3)
+    # print(f"\n{lang_as}")
+    
+    lang_as = type_retrieval("multiquery", "how attention works in transformer?")
+    print(f"\n{lang_as}")
+    
+    
+    
+    
    
 
 

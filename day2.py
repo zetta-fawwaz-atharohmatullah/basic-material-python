@@ -22,6 +22,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 nlp = spacy.load('en_core_web_sm')
 
+
+
 def get_text() -> str:
     """Load the text from the cloud or PDF."""
     try:
